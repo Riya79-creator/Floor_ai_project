@@ -134,71 +134,9 @@ tab2dBtn.addEventListener('click', () => setActiveTab('2d'));
 tab3dBtn.addEventListener('click', () => setActiveTab('3d'));
 tabAnalysisBtn.addEventListener('click', () => setActiveTab('analysis'));
 
-// Process floor plan
-async function processFloorPlan() {
-    if (!currentFile) {
-        alert("Please upload a floor plan image first.");
-        return;
-    }
+function draw2DPlan(walls, rooms) {
+    if (!wallCanvas) return;
     
-    loadingIndicator.classList.remove('hidden');
-    processBtn.disabled = true;
-    
-    const formData = new FormData();
-    formData.append('floor_plan', currentFile);
-    formData.append('use_fallback', fallbackToggle.checked ? 'true' : 'false');
-    
-    try {
-        const response = await fetch('/upload', { method: 'POST', body: formData });
-        const data = await response.json();
-        
-        if (!data.success) throw new Error(data.error || "Processing failed");
-        
-        // Update stats
-        if (data.stats) {
-            statWallsSpan.innerText = data.stats.total_walls ?? '—';
-            statLBSpan.innerText = data.stats.load_bearing ?? '—';
-            statRoomsSpan.innerText = data.stats.total_rooms ?? '—';
-            statAreaSpan.innerText = data.stats.total_area ? `${data.stats.total_area.toFixed(1)} m²` : '—';
-            analysisCommentSpan.innerText = `Detected ${data.stats.total_rooms} rooms, ${data.stats.load_bearing} load-bearing walls, ${data.stats.total_doors} doors, ${data.stats.total_windows} windows.`;
-            detectionStatusP.innerText = `✅ Detected ${data.walls.length} walls, ${data.rooms.length} rooms, ${data.doors.length} doors, ${data.windows.length} windows`;
-        }
-        
-        // Draw 2D plan
-        if (data.walls && data.walls.length) {
-            draw2DPlan(data.walls);
-        }
-        
-        // Load 3D model
-        if (data.model_url) {
-            currentModelUrl = data.model_url;
-            iframeWrapper.innerHTML = `<iframe src="${data.model_url}" class="w-full h-full rounded-lg border-0" style="min-height: 380px; width:100%;" allowfullscreen></iframe>`;
-        }
-        
-        // Display material recommendations
-        if (data.recommendations) {
-            displayMaterialRecommendations(data.recommendations);
-        }
-        
-        // Display furniture suggestions
-        if (data.furniture_placement) {
-            displayFurnitureSuggestions(data.furniture_placement);
-        }
-        
-        // Switch to 3D tab
-        setActiveTab('3d');
-        
-    } catch (err) {
-        console.error(err);
-        alert("Error: " + err.message);
-        detectionStatusP.innerText = "❌ AI processing failed. Try manual mode or different image.";
-    } finally {
-        loadingIndicator.classList.add('hidden');
-        processBtn.disabled = false;
-    }
-}
-
-function draw2DPlan(walls) {
     wallCanvas.style.display = 'block';
     const ctx = wallCanvas.getContext('2d');
     const w = 500, h = 400;
@@ -206,7 +144,34 @@ function draw2DPlan(walls) {
     wallCanvas.height = h;
     ctx.clearRect(0, 0, w, h);
     
-    // Find bounds
+    // Draw background grid
+    ctx.save();
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 0.5;
+    
+    // Draw grid lines every 50 pixels
+    for (let x = 0; x <= w; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= h; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+    }
+    
+    if (!walls || walls.length === 0) {
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '14px Inter';
+        ctx.fillText('No walls detected. Try a clearer image or enable fallback mode.', 50, h/2);
+        ctx.restore();
+        return;
+    }
+    
+    // Find bounds with padding
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     walls.forEach(wall => {
         minX = Math.min(minX, wall.start[0], wall.end[0]);
@@ -215,15 +180,19 @@ function draw2DPlan(walls) {
         maxY = Math.max(maxY, wall.start[1], wall.end[1]);
     });
     
-    const pad = 30;
-    const scaleX = (w - pad * 2) / (maxX - minX || 1);
-    const scaleY = (h - pad * 2) / (maxY - minY || 1);
+    // Add padding to bounds
+    const padding = 40;
+    const rangeX = maxX - minX;
+    const rangeY = maxY - minY;
+    const scaleX = (w - padding * 2) / (rangeX || 1);
+    const scaleY = (h - padding * 2) / (rangeY || 1);
     
+    // Draw walls with proper scaling
     walls.forEach(wall => {
-        const sx = pad + (wall.start[0] - minX) * scaleX;
-        const sy = h - pad - (wall.start[1] - minY) * scaleY;
-        const ex = pad + (wall.end[0] - minX) * scaleX;
-        const ey = h - pad - (wall.end[1] - minY) * scaleY;
+        const sx = padding + (wall.start[0] - minX) * scaleX;
+        const sy = h - padding - (wall.start[1] - minY) * scaleY;
+        const ex = padding + (wall.end[0] - minX) * scaleX;
+        const ey = h - padding - (wall.end[1] - minY) * scaleY;
         
         ctx.beginPath();
         ctx.moveTo(sx, sy);
@@ -237,10 +206,55 @@ function draw2DPlan(walls) {
             ctx.lineWidth = 3;
         }
         ctx.stroke();
+        
+        // Draw endpoints for debugging
+        ctx.fillStyle = wall.is_load_bearing ? '#FF6B6B' : '#C9AE8C';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(ex, ey, 2, 0, 2 * Math.PI);
+        ctx.fill();
     });
+    
+    // Draw room boundaries if available
+    if (rooms && rooms.length) {
+        rooms.forEach(room => {
+            if (room.polygon && room.polygon.length) {
+                ctx.beginPath();
+                const points = room.polygon;
+                const sx = padding + (points[0][0] - minX) * scaleX;
+                const sy = h - padding - (points[0][1] - minY) * scaleY;
+                ctx.moveTo(sx, sy);
+                
+                for (let i = 1; i < points.length; i++) {
+                    const x = padding + (points[i][0] - minX) * scaleX;
+                    const y = h - padding - (points[i][1] - minY) * scaleY;
+                    ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.strokeStyle = '#4ECDC4';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(78, 205, 196, 0.1)';
+                ctx.fill();
+            }
+        });
+    }
+    
+    // Draw coordinate labels
+    ctx.fillStyle = '#64748B';
+    ctx.font = '10px monospace';
+    ctx.fillText(`${minX.toFixed(1)}m`, padding - 5, h - padding + 10);
+    ctx.fillText(`${maxX.toFixed(1)}m`, w - padding - 20, h - padding + 10);
+    ctx.fillText(`${minY.toFixed(1)}m`, padding - 5, padding - 5);
+    
+    ctx.restore();
 }
 
 function displayMaterialRecommendations(recommendations) {
+    if (!recommendations) return;
+    
     let cardsHtml = '';
     const titles = {
         load_bearing_wall: '🧱 Load-Bearing Wall',
@@ -255,7 +269,7 @@ function displayMaterialRecommendations(recommendations) {
             cardsHtml += `
                 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm card-hover">
                     <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-semibold text-slate-800">${titles[key] || key}</h3>
+                        <h3 class="font-semibold text-slate-800">${titles[key] || key.replace('_', ' ')}</h3>
                         <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Score ${top.score}</span>
                     </div>
                     <p class="text-lg font-bold text-slate-900">${top.material}</p>
@@ -276,6 +290,8 @@ function displayMaterialRecommendations(recommendations) {
 }
 
 function displayFurnitureSuggestions(furniturePlacement) {
+    if (!furniturePlacement) return;
+    
     let furnitureHtml = '';
     
     for (const [roomType, placement] of Object.entries(furniturePlacement)) {
@@ -313,6 +329,72 @@ function displayFurnitureSuggestions(furniturePlacement) {
     
     if (furnitureHtml) {
         furnitureGrid.innerHTML = furnitureHtml;
+    }
+}
+
+// Process floor plan
+async function processFloorPlan() {
+    if (!currentFile) {
+        alert("Please upload a floor plan image first.");
+        return;
+    }
+    
+    loadingIndicator.classList.remove('hidden');
+    processBtn.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('floor_plan', currentFile);
+    formData.append('use_fallback', fallbackToggle.checked ? 'true' : 'false');
+    
+    try {
+        const response = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.error || "Processing failed");
+        
+        // Update stats
+        if (data.stats) {
+            statWallsSpan.innerText = data.stats.total_walls ?? '—';
+            statLBSpan.innerText = data.stats.load_bearing ?? '—';
+            statRoomsSpan.innerText = data.stats.total_rooms ?? '—';
+            statAreaSpan.innerText = data.stats.total_area ? `${data.stats.total_area.toFixed(1)} m²` : '—';
+            analysisCommentSpan.innerText = `Detected ${data.stats.total_rooms} rooms, ${data.stats.load_bearing} load-bearing walls, ${data.stats.total_doors} doors, ${data.stats.total_windows} windows.`;
+            detectionStatusP.innerText = `✅ Detected ${data.walls.length} walls, ${data.rooms.length} rooms, ${data.doors.length} doors, ${data.windows.length} windows`;
+        }
+        
+        // Draw 2D plan with both walls and rooms
+        if (data.walls && data.walls.length) {
+            draw2DPlan(data.walls, data.rooms || []);
+        }
+
+        // Load 3D model
+        if (data.model_url) {
+            currentModelUrl = data.model_url;
+            iframeWrapper.innerHTML = `<iframe src="${data.model_url}" class="w-full h-full rounded-lg border-0" style="min-height: 380px; width:100%; height: 500px;" allowfullscreen></iframe>`;
+        }
+        
+        
+        
+        // Display material recommendations
+        if (data.recommendations) {
+            displayMaterialRecommendations(data.recommendations);
+        }
+        
+        // Display furniture suggestions
+        if (data.furniture_placement) {
+            displayFurnitureSuggestions(data.furniture_placement);
+        }
+        
+        // Switch to 3D tab
+        setActiveTab('3d');
+        
+    } catch (err) {
+        console.error(err);
+        alert("Error: " + err.message);
+        detectionStatusP.innerText = "❌ AI processing failed. Try manual mode or different image.";
+    } finally {
+        loadingIndicator.classList.add('hidden');
+        processBtn.disabled = false;
     }
 }
 

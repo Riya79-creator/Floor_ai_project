@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Floor Plan</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <strong>🏠 Floor Plan 3D Model</strong><br>
+        Walls: 60 | Press and drag to rotate | Scroll to zoom
+    </div>
+    <div id="controls">
+        🖱️ Mouse drag to rotate | Right-click to pan | Scroll to zoom
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        
+        // Setup scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122);
+        
+        // Setup camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(8.225000000000001, 8, 18.725);
+        camera.lookAt(8.225000000000001, 0, 6.7250000000000005);
+        
+        // Setup renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = true;
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 20, 5);
+        directionalLight.castShadow = true;
+        directionalLight.receiveShadow = true;
+        scene.add(directionalLight);
+        
+        const backLight = new THREE.PointLight(0x4466cc, 0.3);
+        backLight.position.set(-5, 5, -5);
+        scene.add(backLight);
+        
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(20, 20, 0x88aaff, 0x335588);
+        gridHelper.position.y = -0.1;
+        scene.add(gridHelper);
+        
+        // Simple floor
+        const floorGeometry = new THREE.PlaneGeometry(18, 18);
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.05;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        
+        // Wall data
+        const wallData = [{"start": [0.8, 12.950000000000001], "end": [15.700000000000001, 12.950000000000001], "is_load_bearing": true}, {"start": [0.9500000000000001, 0.4], "end": [15.55, 0.45], "is_load_bearing": true}, {"start": [15.5, 0.35000000000000003], "end": [15.55, 13.100000000000001], "is_load_bearing": true}, {"start": [1.9000000000000001, 1.6500000000000001], "end": [14.600000000000001, 1.75], "is_load_bearing": true}, {"start": [15.600000000000001, 12.9], "end": [15.600000000000001, 0.55], "is_load_bearing": true}, {"start": [0.75, 0.6000000000000001], "end": [0.8500000000000001, 12.9], "is_load_bearing": true}, {"start": [1.9000000000000001, 7.95], "end": [12.950000000000001, 7.800000000000001], "is_load_bearing": true}, {"start": [1.9000000000000001, 1.7000000000000002], "end": [2.15, 10.8], "is_load_bearing": true}, {"start": [14.450000000000001, 4.95], "end": [14.600000000000001, 10.75], "is_load_bearing": false}, {"start": [14.350000000000001, 1.8], "end": [14.4, 10.75], "is_load_bearing": true}, {"start": [2.2, 7.9], "end": [10.600000000000001, 7.75], "is_load_bearing": true}, {"start": [10.350000000000001, 8.05], "end": [10.65, 7.8500000000000005], "is_load_bearing": false}, {"start": [10.350000000000001, 2.95], "end": [10.600000000000001, 10.75], "is_load_bearing": true}, {"start": [6.800000000000001, 5.1000000000000005], "end": [6.9, 10.8], "is_load_bearing": false}, {"start": [3.25, 5.15], "end": [10.75, 5.2], "is_load_bearing": true}, {"start": [8.1, 7.95], "end": [14.600000000000001, 7.800000000000001], "is_load_bearing": true}, {"start": [4.25, 1.85], "end": [10.5, 1.85], "is_load_bearing": true}, {"start": [5.2, 8.700000000000001], "end": [5.45, 10.8], "is_load_bearing": false}, {"start": [2.1, 1.8], "end": [7.65, 1.8], "is_load_bearing": false}, {"start": [9.25, 10.700000000000001], "end": [14.600000000000001, 10.8], "is_load_bearing": false}, {"start": [1.9000000000000001, 10.600000000000001], "end": [7.0, 10.75], "is_load_bearing": false}, {"start": [5.0, 5.15], "end": [9.5, 5.1000000000000005], "is_load_bearing": false}, {"start": [5.300000000000001, 5.9], "end": [5.3500000000000005, 10.05], "is_load_bearing": false}, {"start": [6.95, 7.7], "end": [11.0, 7.8500000000000005], "is_load_bearing": false}, {"start": [6.95, 9.05], "end": [10.600000000000001, 9.35], "is_load_bearing": false}, {"start": [7.3500000000000005, 1.8], "end": [7.45, 5.25], "is_load_bearing": false}, {"start": [9.600000000000001, 10.75], "end": [9.950000000000001, 7.7], "is_load_bearing": false}, {"start": [6.550000000000001, 11.700000000000001], "end": [9.5, 11.950000000000001], "is_load_bearing": false}, {"start": [11.65, 5.1000000000000005], "end": [14.600000000000001, 5.1000000000000005], "is_load_bearing": false}, {"start": [10.350000000000001, 6.3500000000000005], "end": [13.3, 6.5], "is_load_bearing": false}, {"start": [2.2, 6.800000000000001], "end": [2.2, 3.95], "is_load_bearing": false}, {"start": [6.8500000000000005, 12.450000000000001], "end": [9.700000000000001, 12.700000000000001], "is_load_bearing": true}, {"start": [10.350000000000001, 4.6000000000000005], "end": [10.4, 7.4], "is_load_bearing": false}, {"start": [2.5, 10.8], "end": [5.300000000000001, 10.8], "is_load_bearing": false}, {"start": [2.0500000000000003, 7.7], "end": [4.5, 8.05], "is_load_bearing": false}, {"start": [7.1000000000000005, 11.950000000000001], "end": [9.5, 11.850000000000001], "is_load_bearing": false}, {"start": [3.6, 3.35], "end": [5.9, 3.5], "is_load_bearing": false}, {"start": [14.3, 5.95], "end": [14.3, 3.7], "is_load_bearing": false}, {"start": [8.35, 3.4000000000000004], "end": [10.55, 3.4000000000000004], "is_load_bearing": false}, {"start": [4.2, 5.0], "end": [6.4, 5.050000000000001], "is_load_bearing": false}, {"start": [1.9500000000000002, 12.200000000000001], "end": [4.05, 12.25], "is_load_bearing": false}, {"start": [8.65, 1.05], "end": [10.65, 1.2000000000000002], "is_load_bearing": false}, {"start": [6.550000000000001, 9.8], "end": [6.65, 11.75], "is_load_bearing": false}, {"start": [2.2, 9.600000000000001], "end": [2.2, 7.65], "is_load_bearing": false}, {"start": [10.55, 6.9], "end": [10.65, 5.0], "is_load_bearing": false}, {"start": [5.300000000000001, 6.4], "end": [7.2, 6.45], "is_load_bearing": false}, {"start": [8.65, 3.5500000000000003], "end": [10.55, 3.5500000000000003], "is_load_bearing": false}, {"start": [10.200000000000001, 5.2], "end": [10.450000000000001, 3.35], "is_load_bearing": false}, {"start": [11.55, 3.3000000000000003], "end": [13.350000000000001, 3.45], "is_load_bearing": false}, {"start": [5.9, 1.1], "end": [7.7, 1.1500000000000001], "is_load_bearing": false}, {"start": [11.600000000000001, 3.5500000000000003], "end": [13.350000000000001, 3.5500000000000003], "is_load_bearing": false}, {"start": [9.850000000000001, 10.75], "end": [9.950000000000001, 9.05], "is_load_bearing": false}, {"start": [11.65, 6.550000000000001], "end": [13.3, 6.6000000000000005], "is_load_bearing": false}, {"start": [11.65, 9.3], "end": [13.3, 9.3], "is_load_bearing": false}, {"start": [12.850000000000001, 1.85], "end": [14.450000000000001, 1.8], "is_load_bearing": false}, {"start": [5.25, 7.300000000000001], "end": [5.25, 8.9], "is_load_bearing": false}, {"start": [11.75, 9.1], "end": [13.3, 9.4], "is_load_bearing": false}, {"start": [2.2, 10.55], "end": [3.75, 10.55], "is_load_bearing": false}, {"start": [7.65, 9.15], "end": [9.1, 9.15], "is_load_bearing": false}, {"start": [6.45, 5.1000000000000005], "end": [6.45, 6.550000000000001], "is_load_bearing": false}];
+        
+        console.log('Creating', wallData.length, 'walls');
+        
+        // Create walls
+        wallData.forEach((wall, index) => {
+            const start = new THREE.Vector3(wall.start[0], 0, wall.start[1]);
+            const end = new THREE.Vector3(wall.end[0], 0, wall.end[1]);
+            const length = start.distanceTo(end);
+            
+            if (length < 0.2) return;
+            
+            const angle = Math.atan2(end.z - start.z, end.x - start.x);
+            const color = wall.is_load_bearing ? 0xff6666 : 0xc9ae8c;
+            const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
+            
+            const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(length, 2.8, 0.2), material);
+            wallMesh.position.set((start.x + end.x) / 2, 1.4, (start.z + end.z) / 2);
+            wallMesh.rotation.y = angle;
+            wallMesh.castShadow = true;
+            wallMesh.receiveShadow = true;
+            scene.add(wallMesh);
+        });
+        
+        // Add a simple colored cube at center to verify rendering works
+        const testCube = new THREE.Mesh(
+            new THREE.BoxGeometry(0.5, 0.5, 0.5),
+            new THREE.MeshStandardMaterial({ color: 0xffaa44 })
+        );
+        testCube.position.set(8.225000000000001, 0.5, 6.7250000000000005);
+        testCube.castShadow = true;
+        scene.add(testCube);
+        
+        // Add some floating particles for ambiance
+        const particleCount = 300;
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesPositions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            particlesPositions[i*3] = (Math.random() - 0.5) * 20;
+            particlesPositions[i*3+1] = Math.random() * 5;
+            particlesPositions[i*3+2] = (Math.random() - 0.5) * 20;
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlesPositions, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.05 });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
+        
+        // Simple animation
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // Handle window resize
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        console.log('3D Model Loaded Successfully!');
+    </script>
+</body>
+</html>

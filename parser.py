@@ -13,35 +13,68 @@ class FloorPlanParser:
         self.wall_thickness = 0.2
         
     def parse_floor_plan(self, image_path: str) -> Tuple[List, List, List, List, Optional[str]]:
-        """Extract walls, rooms, doors, and windows from floor plan image"""
-        img = cv2.imread(image_path)
-        if img is None:
-            return None, None, None, None, "Could not load image"
-        
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edges = cv2.Canny(blurred, 50, 150)
-        
-        # Detect walls using Hough Lines
-        walls = self._detect_walls(edges)
-        
-        # Detect rooms from contours
-        rooms = self._detect_rooms(edges, img.shape)
-        
-        # Detect doors and windows
-        doors, windows = self._detect_openings(blurred)
-        
-        return walls, rooms, doors, windows, None
+        """Extract walls, rooms, doors, and windows with improved preprocessing"""
+        try:
+            img = cv2.imread(image_path)
+            if img is None:
+                return None, None, None, None, "Could not load image"
+            
+            # Resize image to a standard size for consistent processing
+            height, width = img.shape[:2]
+            original_scale = self.scale
+            
+            if width > 1200:
+                scale_factor = 1200 / width
+                new_width = 1200
+                new_height = int(height * scale_factor)
+                img = cv2.resize(img, (new_width, new_height))
+                self.scale = original_scale * scale_factor
+            
+            # Convert to grayscale
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            # Apply adaptive thresholding for better line detection
+            binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                            cv2.THRESH_BINARY_INV, 11, 2)
+            
+            # Remove small noise
+            kernel = np.ones((2,2), np.uint8)
+            binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+            
+            # Detect edges
+            edges = cv2.Canny(binary, 50, 150)
+            
+            # Dilate edges to connect broken lines
+            kernel = np.ones((3,3), np.uint8)
+            edges = cv2.dilate(edges, kernel, iterations=1)
+            
+            # Detect walls
+            walls = self._detect_walls(edges)
+            
+            # Detect rooms
+            rooms = self._detect_rooms(edges, img.shape)
+            
+            # Detect doors and windows
+            doors, windows = self._detect_openings(binary)
+            
+            # Reset scale if changed
+            self.scale = original_scale
+            
+            return walls, rooms, doors, windows, None
+            
+        except Exception as e:
+            return None, None, None, None, str(e)
     
     def _detect_walls(self, edges: np.ndarray) -> List[Dict]:
-        """Detect walls using Hough Line Transform"""
+        """Detect walls using Hough Line Transform with better parameters"""
+        # More sensitive parameters for better wall detection
         lines = cv2.HoughLinesP(
             edges, 
             rho=1, 
             theta=np.pi/180, 
-            threshold=50, 
-            minLineLength=40, 
-            maxLineGap=10
+            threshold=30,  # Reduced from 50
+            minLineLength=25,  # Reduced from 40
+            maxLineGap=15  # Increased from 10
         )
         
         walls = []
@@ -50,20 +83,27 @@ class FloorPlanParser:
                 x1, y1, x2, y2 = line[0]
                 length = np.hypot(x2 - x1, y2 - y1) * self.scale
                 
-                if length > 0.5:  # Filter tiny walls
+                # Filter walls by length - include shorter walls
+                if length > 0.3:  # Reduced from 0.5
                     walls.append({
                         'start': (float(x1 * self.scale), float(y1 * self.scale)),
                         'end': (float(x2 * self.scale), float(y2 * self.scale)),
+                        'pixel_start': (x1, y1),
+                        'pixel_end': (x2, y2),
                         'length': float(length)
                     })
         
-        # Merge nearby walls
-        walls = self._merge_walls(walls)
+        # Sort walls by length
+        walls.sort(key=lambda x: x['length'], reverse=True)
+        
+        # Only merge walls if they're very close and aligned
+        walls = self._merge_walls_smart(walls)
         
         return walls
     
-    def _merge_walls(self, walls: List[Dict], threshold: float = 0.3) -> List[Dict]:
-        """Merge nearby walls to simplify the model"""
+    def _merge_walls_smart(self, walls: List[Dict], angle_threshold: float = 10, 
+                           distance_threshold: float = 0.2) -> List[Dict]:
+        """Intelligently merge walls that are collinear and close"""
         if not walls:
             return walls
             
@@ -75,38 +115,67 @@ class FloorPlanParser:
                 continue
                 
             current = walls[i]
-            merged_wall = current.copy()
+            current_angle = self._get_wall_angle(current)
+            merged_points = [(current['start'], current['end'])]
             used[i] = True
             
             for j in range(i + 1, len(walls)):
                 if used[j]:
                     continue
                     
-                if self._are_walls_close(current, walls[j], threshold):
-                    merged_wall = self._combine_walls(merged_wall, walls[j])
+                wall_angle = self._get_wall_angle(walls[j])
+                angle_diff = abs(current_angle - wall_angle)
+                angle_diff = min(angle_diff, 180 - angle_diff)
+                
+                if angle_diff > angle_threshold:
+                    continue
+                
+                # Check if walls are close enough
+                if self._are_walls_aligned(current, walls[j], distance_threshold):
+                    merged_points.append((walls[j]['start'], walls[j]['end']))
                     used[j] = True
             
-            merged.append(merged_wall)
+            if len(merged_points) > 1:
+                merged_wall = self._combine_multiple_walls(merged_points)
+                merged.append(merged_wall)
+            else:
+                merged.append(current)
         
         return merged
     
-    def _are_walls_close(self, wall1: Dict, wall2: Dict, threshold: float) -> bool:
-        """Check if two walls are close enough to merge"""
+    def _get_wall_angle(self, wall: Dict) -> float:
+        """Calculate wall angle in degrees"""
+        dx = wall['end'][0] - wall['start'][0]
+        dy = wall['end'][1] - wall['start'][1]
+        if dx == 0 and dy == 0:
+            return 0
+        angle = np.degrees(np.arctan2(dy, dx))
+        return angle % 180
+    
+    def _are_walls_aligned(self, wall1: Dict, wall2: Dict, threshold: float) -> bool:
+        """Check if walls are aligned and close enough to merge"""
+        # Get endpoints
         points1 = [wall1['start'], wall1['end']]
         points2 = [wall2['start'], wall2['end']]
         
+        # Check distance between closest endpoints
+        min_dist = float('inf')
         for p1 in points1:
             for p2 in points2:
                 dist = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
-                if dist < threshold:
-                    return True
-        return False
-    
-    def _combine_walls(self, wall1: Dict, wall2: Dict) -> Dict:
-        """Combine two walls into one"""
-        all_points = [wall1['start'], wall1['end'], wall2['start'], wall2['end']]
-        all_points.sort()
+                min_dist = min(min_dist, dist)
         
+        return min_dist < threshold
+    
+    def _combine_multiple_walls(self, wall_points: List[Tuple]) -> Dict:
+        """Combine multiple wall segments into one"""
+        all_points = []
+        for start, end in wall_points:
+            all_points.append(start)
+            all_points.append(end)
+        
+        # Find min and max points
+        all_points.sort()
         start = all_points[0]
         end = all_points[-1]
         length = np.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
@@ -114,21 +183,35 @@ class FloorPlanParser:
         return {
             'start': start,
             'end': end,
-            'length': length
+            'length': float(length)
         }
     
     def _detect_rooms(self, edges: np.ndarray, shape: Tuple) -> List[Dict]:
-        """Detect rooms from contours"""
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        """Detect rooms with better contour processing"""
+        # Use morphological operations to close gaps
+        kernel = np.ones((3,3), np.uint8)
+        closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)
+        dilated = cv2.dilate(closed, kernel, iterations=1)
+        
+        # Find contours with hierarchy to get internal rooms
+        contours, hierarchy = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         rooms = []
-        room_types = ['living_room', 'bedroom', 'kitchen', 'bathroom', 'dining_room', 'hallway', 'office']
+        min_room_area = 2000  # Reduced from 5000 for better detection
         
         for i, cnt in enumerate(contours):
             area = cv2.contourArea(cnt)
-            if area > 5000:  # Minimum room area
+            
+            # Filter by area and aspect ratio
+            if area > min_room_area and area < 100000:  # Upper bound to filter noise
                 perimeter = cv2.arcLength(cnt, True)
-                approx = cv2.approxPolyDP(cnt, 0.02 * perimeter, True)
+                approx = cv2.approxPolyDP(cnt, 0.01 * perimeter, True)  # More precise approximation
+                
+                # Skip if too few points
+                if len(approx) < 3:
+                    continue
+                
+                # Convert to world coordinates
                 polygon = [(float(p[0][0] * self.scale), float(p[0][1] * self.scale)) for p in approx]
                 
                 # Calculate centroid
@@ -137,20 +220,26 @@ class FloorPlanParser:
                     cx = float(M["m10"] / M["m00"] * self.scale)
                     cy = float(M["m01"] / M["m00"] * self.scale)
                 else:
-                    cx, cy = polygon[0]
+                    cx, cy = polygon[0] if polygon else (0, 0)
                 
-                # Determine room type based on area and aspect ratio
+                # Get bounding box
                 bbox = cv2.boundingRect(cnt)
+                
+                # Determine room type with better logic
+                bbox_area = bbox[2] * bbox[3]
                 aspect_ratio = bbox[2] / bbox[3] if bbox[3] > 0 else 1
                 
-                if area > 20000:
+                # Room type classification
+                if area > 25000:
                     room_type = 'living_room'
-                elif aspect_ratio > 1.5:
-                    room_type = 'hallway'
-                elif area < 8000:
-                    room_type = 'bathroom'
+                elif 15000 < area <= 25000:
+                    room_type = 'bedroom'
+                elif 8000 < area <= 15000:
+                    room_type = 'kitchen' if aspect_ratio < 1.2 else 'dining_room'
+                elif area <= 8000:
+                    room_type = 'bathroom' if aspect_ratio < 1.3 else 'hallway'
                 else:
-                    room_type = room_types[i % len(room_types)]
+                    room_type = 'office'
                 
                 rooms.append({
                     'id': f'room_{i}',
@@ -160,18 +249,18 @@ class FloorPlanParser:
                     'polygon': polygon,
                     'centroid': [cx, cy],
                     'bounding_box': [
-                        bbox[0] * self.scale, 
-                        bbox[1] * self.scale, 
-                        bbox[2] * self.scale, 
-                        bbox[3] * self.scale
+                        float(bbox[0] * self.scale), 
+                        float(bbox[1] * self.scale), 
+                        float(bbox[2] * self.scale), 
+                        float(bbox[3] * self.scale)
                     ]
                 })
         
         return rooms
     
-    def _detect_openings(self, blurred: np.ndarray) -> Tuple[List, List]:
-        """Detect doors and windows using edge detection"""
-        edges_thick = cv2.Canny(blurred, 30, 100)
+    def _detect_openings(self, binary: np.ndarray) -> Tuple[List, List]:
+        """Detect doors and windows using contour detection"""
+        edges_thick = cv2.Canny(binary, 30, 100)
         kernel = np.ones((5,5), np.uint8)
         edges_thick = cv2.dilate(edges_thick, kernel, iterations=1)
         
@@ -186,21 +275,25 @@ class FloorPlanParser:
                 x, y, w, h = cv2.boundingRect(opening)
                 aspect = w / h if h > 0 else 0
                 
+                position = [(x + w/2) * self.scale, (y + h/2) * self.scale]
+                start = [x * self.scale, y * self.scale]
+                end = [(x + w) * self.scale, (y + h) * self.scale]
+                
                 if aspect > 1.5:
                     windows.append({
-                        'position': [(x + w/2) * self.scale, (y + h/2) * self.scale],
-                        'width': w * self.scale,
-                        'height': h * self.scale,
-                        'start': [x * self.scale, y * self.scale],
-                        'end': [(x + w) * self.scale, (y + h) * self.scale]
+                        'position': position,
+                        'width': float(w * self.scale),
+                        'height': float(h * self.scale),
+                        'start': start,
+                        'end': end
                     })
                 else:
                     doors.append({
-                        'position': [(x + w/2) * self.scale, (y + h/2) * self.scale],
-                        'width': w * self.scale,
-                        'height': h * self.scale,
-                        'start': [x * self.scale, y * self.scale],
-                        'end': [(x + w) * self.scale, (y + h) * self.scale]
+                        'position': position,
+                        'width': float(w * self.scale),
+                        'height': float(h * self.scale),
+                        'start': start,
+                        'end': end
                     })
         
         return doors, windows
@@ -263,3 +356,4 @@ class FloorPlanParser:
         windows = []
         
         return walls, rooms, doors, windows
+    
