@@ -5,12 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Floor AI | Smart Floor Plan Analysis</title>
-    <!-- Google Fonts + Tailwind CSS + Font Awesome Icons -->
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome 6 (free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * {
@@ -27,7 +25,7 @@
 
         .card-hover:hover {
             transform: translateY(-2px);
-            box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.08);
         }
 
         .tab-active {
@@ -49,27 +47,10 @@
             border-color: #3b82f6;
             background: #f0f9ff;
         }
-
-        .scrollbar-thin::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        .scrollbar-thin::-webkit-scrollbar-track {
-            background: #e2e8f0;
-            border-radius: 10px;
-        }
-
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-            background: #94a3b8;
-            border-radius: 10px;
-        }
     </style>
 </head>
 
 <body class="antialiased text-slate-700">
-
-    <!-- ====================== TOP NAVBAR ====================== -->
     <nav class="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -80,26 +61,23 @@
                 <span class="font-bold text-2xl tracking-tight text-slate-800">Floor<span
                         class="text-blue-600">AI</span></span>
             </div>
-            <div class="hidden md:flex gap-8 text-slate-600 font-medium">
-                <a href="#" class="hover:text-blue-600 transition">Home</a>
-                <a href="#" class="hover:text-blue-600 transition">Upload</a>
-                <a href="#" class="hover:text-blue-600 transition">About</a>
-            </div>
             <div class="flex items-center gap-3">
                 <span
-                    class="text-sm bg-slate-100 px-3 py-1.5 rounded-full text-slate-600 hidden sm:inline-flex items-center gap-1"><i
-                        class="fas fa-microchip text-xs"></i> AI ready</span>
+                    class="text-sm bg-slate-100 px-3 py-1.5 rounded-full text-slate-600 hidden sm:inline-flex items-center gap-1">
+                    <i class="fas fa-microchip text-xs"></i> AI ready
+                </span>
             </div>
         </div>
     </nav>
 
-    <!-- ====================== HERO SECTION ====================== -->
     <section class="bg-gradient-to-br from-white via-slate-50 to-blue-50/40 border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-5 sm:px-8 py-12 md:py-16 text-center">
-            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-800 mb-4">Convert Floor Plans into
-                <span class="text-blue-600">Smart 3D Models</span></h1>
-            <p class="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto">AI-powered analysis with intelligent material
-                recommendations — from blueprint to build.</p>
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-800 mb-4">
+                Convert Floor Plans into <span class="text-blue-600">Smart 3D Models</span>
+            </h1>
+            <p class="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto">
+                AI-powered analysis with intelligent material recommendations — from blueprint to build.
+            </p>
             <div class="mt-8">
                 <button id="heroUploadBtn"
                     class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl shadow-md shadow-blue-200 transition flex items-center gap-2 mx-auto">
@@ -109,43 +87,38 @@
         </div>
     </section>
 
-    <!-- ====================== MAIN DASHBOARD (2 COLUMNS) ====================== -->
     <div class="max-w-7xl mx-auto px-5 sm:px-8 py-10">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-            <!-- LEFT PANEL: upload + preview + manual toggle -->
             <div class="lg:col-span-5 space-y-6">
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 transition-all">
-                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4"><i
-                            class="fas fa-upload text-blue-500"></i> Upload blueprint</h2>
-
-                    <!-- Drag & Drop Zone -->
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4">
+                        <i class="fas fa-upload text-blue-500"></i> Upload blueprint
+                    </h2>
                     <div id="dropzone"
                         class="upload-zone border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer bg-slate-50/50">
                         <div class="flex flex-col items-center gap-2">
                             <div
                                 class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
-                                <i class="fas fa-image text-xl"></i></div>
+                                <i class="fas fa-image text-xl"></i>
+                            </div>
                             <p class="font-medium text-slate-700">Drag & drop your floor plan</p>
                             <p class="text-sm text-slate-400">PNG, JPG, JPEG (max 16MB)</p>
                             <input type="file" id="fileInput" class="hidden" accept="image/jpeg,image/png,image/jpg">
                             <button id="selectFileBtn"
-                                class="mt-3 text-sm bg-white border border-slate-300 px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition">Browse
-                                files</button>
+                                class="mt-3 text-sm bg-white border border-slate-300 px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition">
+                                Browse files
+                            </button>
                         </div>
                     </div>
-
-                    <!-- Preview Image -->
                     <div id="previewContainer" class="mt-5 hidden">
                         <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
                             <img id="previewImg" class="w-full h-auto object-contain max-h-48" alt="Preview">
                             <button id="clearPreview"
-                                class="absolute top-2 right-2 bg-white/80 backdrop-blur text-slate-600 rounded-full p-1.5 shadow-sm hover:bg-red-50 hover:text-red-500 transition"><i
-                                    class="fas fa-times text-xs"></i></button>
+                                class="absolute top-2 right-2 bg-white/80 backdrop-blur text-slate-600 rounded-full p-1.5 shadow-sm hover:bg-red-50 hover:text-red-500 transition">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
                         </div>
                     </div>
-
-                    <!-- Manual Mode Toggle -->
                     <div
                         class="mt-5 flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="flex items-center gap-3">
@@ -159,45 +132,34 @@
                             </div>
                         </label>
                     </div>
-
-                    <!-- Process Button -->
                     <button id="processBtn"
                         class="w-full mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
                         <i class="fas fa-brain"></i> Analyze & Build 3D
                     </button>
                     <div id="loadingIndicator"
-                        class="hidden mt-4 text-center text-slate-500 text-sm flex items-center justify-center gap-2"><i
-                            class="fas fa-spinner fa-spin"></i> Processing layout, generating model...</div>
-                </div>
-
-                <!-- quick stats summary (mobile friendly) -->
-                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hidden lg:block">
-                    <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3"><i
-                            class="fas fa-chart-line mr-1"></i> Quick insight</h3>
-                    <div id="quickStatsPlaceholder" class="text-slate-500 text-sm">Once analyzed, key metrics appear
-                        here.</div>
+                        class="hidden mt-4 text-center text-slate-500 text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-spinner fa-spin"></i> Processing layout, generating model...
+                    </div>
                 </div>
             </div>
 
-            <!-- RIGHT PANEL: TABS (2D / 3D / ANALYSIS) -->
             <div class="lg:col-span-7">
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <!-- Tab headers -->
                     <div class="flex border-b border-slate-200 bg-slate-50/60 px-4">
                         <button id="tab2dBtn"
-                            class="tab-active py-3 px-5 text-sm font-medium transition-all flex items-center gap-2"><i
-                                class="fas fa-drafting-compass"></i> 2D Plan</button>
+                            class="tab-active py-3 px-5 text-sm font-medium transition-all flex items-center gap-2">
+                            <i class="fas fa-drafting-compass"></i> 2D Plan
+                        </button>
                         <button id="tab3dBtn"
-                            class="tab-inactive py-3 px-5 text-sm font-medium transition-all flex items-center gap-2"><i
-                                class="fas fa-cube"></i> 3D Model</button>
+                            class="tab-inactive py-3 px-5 text-sm font-medium transition-all flex items-center gap-2">
+                            <i class="fas fa-cube"></i> 3D Model
+                        </button>
                         <button id="tabAnalysisBtn"
-                            class="tab-inactive py-3 px-5 text-sm font-medium transition-all flex items-center gap-2"><i
-                                class="fas fa-chart-simple"></i> Analysis</button>
+                            class="tab-inactive py-3 px-5 text-sm font-medium transition-all flex items-center gap-2">
+                            <i class="fas fa-chart-simple"></i> Analysis
+                        </button>
                     </div>
-
-                    <!-- Tab content container -->
                     <div class="p-5 min-h-[420px]">
-                        <!-- 2D Plan Tab (canvas overlay simulation) -->
                         <div id="tab2dContent" class="tab-pane">
                             <div class="text-center text-slate-500 bg-slate-50 rounded-xl p-10 border border-dashed">
                                 <i class="fas fa-map-drawing text-4xl text-slate-300 mb-3"></i>
@@ -207,19 +169,15 @@
                                     style="display:none;"></canvas>
                             </div>
                         </div>
-
-                        <!-- 3D Model Tab (iframe) -->
                         <div id="tab3dContent" class="tab-pane hidden">
                             <div id="iframeWrapper"
                                 class="bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
-                                <div class="text-center text-slate-300"><i
-                                        class="fas fa-cube fa-3x mb-2 opacity-50"></i>
+                                <div class="text-center text-slate-300">
+                                    <i class="fas fa-cube fa-3x mb-2 opacity-50"></i>
                                     <p class="text-sm">3D model will appear here after processing</p>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Analysis Tab (detailed metrics) -->
                         <div id="tabAnalysisContent" class="tab-pane hidden">
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                                 <div class="bg-slate-50 p-3 rounded-xl text-center">
@@ -240,9 +198,10 @@
                                 </div>
                             </div>
                             <div class="bg-blue-50/40 rounded-xl p-4 border border-blue-100">
-                                <p class="text-sm text-slate-600"><i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                                    <span id="analysisComment">Upload a floor plan to see structural analysis and span
-                                        detection.</span></p>
+                                <p class="text-sm text-slate-600">
+                                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                    <span id="analysisComment">Upload a floor plan to see structural analysis.</span>
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -250,269 +209,42 @@
             </div>
         </div>
 
-        <!-- ====================== MATERIAL RECOMMENDATION SECTION ====================== -->
         <div class="mt-12">
             <div class="flex items-center justify-between mb-5">
-                <h2 class="text-2xl font-bold text-slate-800"><i
-                        class="fas fa-hard-hat text-amber-500 mr-2"></i>Material Intelligence</h2>
+                <h2 class="text-2xl font-bold text-slate-800">
+                    <i class="fas fa-hard-hat text-amber-500 mr-2"></i>Material Intelligence
+                </h2>
                 <span class="text-xs bg-slate-100 px-3 py-1 rounded-full text-slate-500">Cost vs strength
                     tradeoff</span>
             </div>
             <div id="materialCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                <!-- Placeholder cards -->
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center text-slate-400"><i
-                        class="fas fa-box-open text-2xl mb-2 block"></i> Upload to see recommendations</div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center text-slate-400"><i
-                        class="fas fa-chart-line text-2xl mb-2 block"></i> AI will compute scores</div>
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center text-slate-400">
+                    <i class="fas fa-box-open text-2xl mb-2 block"></i> Upload to see recommendations
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-2xl font-bold text-slate-800">
+                    <i class="fas fa-couch text-purple-500 mr-2"></i>Furniture Suggestions
+                </h2>
+            </div>
+            <div id="furnitureGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center text-slate-400">
+                    <i class="fas fa-couch text-2xl mb-2 block"></i> Upload to see furniture placement
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ====================== FOOTER ====================== -->
     <footer class="border-t border-slate-200 mt-16 py-8 bg-white/50">
-        <div
-            class="max-w-7xl mx-auto px-5 sm:px-8 text-center text-slate-400 text-sm flex flex-col md:flex-row justify-between items-center gap-2">
+        <div class="max-w-7xl mx-auto px-5 sm:px-8 text-center text-slate-400 text-sm">
             <span>© 2025 Floor AI — AI-powered construction intelligence</span>
-            <span><i class="fas fa-microchip"></i> Built with AI | Hackathon Project</span>
         </div>
     </footer>
 
-    <script>
-        // --------------------- DOM Elements -------------------------
-        const dropzone = document.getElementById('dropzone');
-        const fileInput = document.getElementById('fileInput');
-        const selectFileBtn = document.getElementById('selectFileBtn');
-        const previewContainer = document.getElementById('previewContainer');
-        const previewImg = document.getElementById('previewImg');
-        const clearPreview = document.getElementById('clearPreview');
-        const fallbackToggle = document.getElementById('fallbackToggle');
-        const processBtn = document.getElementById('processBtn');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const heroUploadBtn = document.getElementById('heroUploadBtn');
-
-        // Tabs
-        const tab2dBtn = document.getElementById('tab2dBtn');
-        const tab3dBtn = document.getElementById('tab3dBtn');
-        const tabAnalysisBtn = document.getElementById('tabAnalysisBtn');
-        const tab2dContent = document.getElementById('tab2dContent');
-        const tab3dContent = document.getElementById('tab3dContent');
-        const tabAnalysisContent = document.getElementById('tabAnalysisContent');
-
-        // Stats & analysis elements
-        const statWallsSpan = document.getElementById('statWalls');
-        const statLBSpan = document.getElementById('statLB');
-        const statRoomsSpan = document.getElementById('statRooms');
-        const statAreaSpan = document.getElementById('statArea');
-        const analysisCommentSpan = document.getElementById('analysisComment');
-        const detectionStatusP = document.getElementById('detectionStatus');
-        const wallCanvas = document.getElementById('wallOverlayCanvas');
-        const iframeWrapper = document.getElementById('iframeWrapper');
-        const materialGrid = document.getElementById('materialCardsGrid');
-        const quickStatsPlaceholder = document.getElementById('quickStatsPlaceholder');
-
-        let currentFile = null;
-        let currentModelUrl = null;
-
-        // helper: reset UI for new session
-        function resetUI() {
-            statWallsSpan.innerText = '—';
-            statLBSpan.innerText = '—';
-            statRoomsSpan.innerText = '—';
-            statAreaSpan.innerText = '—';
-            analysisCommentSpan.innerText = 'Upload a floor plan to see structural analysis and span detection.';
-            detectionStatusP.innerText = 'Waiting for floor plan upload. AI will detect walls & rooms.';
-            materialGrid.innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center text-slate-400"><i class="fas fa-box-open text-2xl mb-2 block"></i> Upload to see recommendations</div>
-                                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center text-slate-400"><i class="fas fa-chart-line text-2xl mb-2 block"></i> AI will compute scores</div>`;
-            if (currentModelUrl) {
-                // clear iframe
-                iframeWrapper.innerHTML = `<div class="text-center text-slate-300"><i class="fas fa-cube fa-3x mb-2 opacity-50"></i><p class="text-sm">3D model will appear here after processing</p></div>`;
-                currentModelUrl = null;
-            }
-            wallCanvas.style.display = 'none';
-            const ctx = wallCanvas.getContext('2d');
-            ctx.clearRect(0, 0, wallCanvas.width, wallCanvas.height);
-        }
-
-        // file selection & preview
-        function handleFile(file) {
-            if (!file || !file.type.startsWith('image/')) return;
-            currentFile = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewImg.src = e.target.result;
-                previewContainer.classList.remove('hidden');
-                resetUI();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        dropzone.addEventListener('click', () => fileInput.click());
-        selectFileBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        });
-        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('border-blue-400', 'bg-blue-50'); });
-        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-blue-400', 'bg-blue-50'));
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('border-blue-400', 'bg-blue-50');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) handleFile(file);
-        });
-        clearPreview.addEventListener('click', () => {
-            previewContainer.classList.add('hidden');
-            currentFile = null;
-            resetUI();
-        });
-        heroUploadBtn.addEventListener('click', () => fileInput.click());
-
-        // Tab switching logic
-        function setActiveTab(tabId) {
-            [tab2dBtn, tab3dBtn, tabAnalysisBtn].forEach(btn => {
-                btn.classList.remove('tab-active');
-                btn.classList.add('tab-inactive');
-            });
-            if (tabId === '2d') {
-                tab2dBtn.classList.add('tab-active');
-                tab2dContent.classList.remove('hidden');
-                tab3dContent.classList.add('hidden');
-                tabAnalysisContent.classList.add('hidden');
-            } else if (tabId === '3d') {
-                tab3dBtn.classList.add('tab-active');
-                tab2dContent.classList.add('hidden');
-                tab3dContent.classList.remove('hidden');
-                tabAnalysisContent.classList.add('hidden');
-            } else {
-                tabAnalysisBtn.classList.add('tab-active');
-                tab2dContent.classList.add('hidden');
-                tab3dContent.classList.add('hidden');
-                tabAnalysisContent.classList.remove('hidden');
-            }
-        }
-        tab2dBtn.addEventListener('click', () => setActiveTab('2d'));
-        tab3dBtn.addEventListener('click', () => setActiveTab('3d'));
-        tabAnalysisBtn.addEventListener('click', () => setActiveTab('analysis'));
-
-        // ---------- BACKEND INTEGRATION (fetch to /upload) ----------
-        async function processFloorPlan() {
-            if (!currentFile) {
-                alert("Please upload a floor plan image first.");
-                return;
-            }
-            loadingIndicator.classList.remove('hidden');
-            processBtn.disabled = true;
-            const formData = new FormData();
-            formData.append('floor_plan', currentFile);
-            formData.append('use_fallback', fallbackToggle.checked ? 'true' : 'false');
-
-            try {
-                const response = await fetch('/upload', { method: 'POST', body: formData });
-                const data = await response.json();
-                if (!data.success) throw new Error(data.error || "Processing failed");
-
-                // Update stats & analysis tab
-                if (data.stats) {
-                    statWallsSpan.innerText = data.stats.total_walls ?? '—';
-                    statLBSpan.innerText = data.stats.load_bearing ?? '—';
-                    statRoomsSpan.innerText = data.stats.total_rooms ?? '—';
-                    statAreaSpan.innerText = data.stats.total_area ? `${data.stats.total_area.toFixed(1)} m²` : '—';
-                    analysisCommentSpan.innerText = `Detected ${data.stats.total_rooms} rooms and ${data.stats.load_bearing} load-bearing walls. ${data.spans?.length ? 'Spans detected: consider reinforcement.' : 'Span analysis OK.'}`;
-                    quickStatsPlaceholder.innerHTML = `<div class="space-y-2 text-sm"><div class="flex justify-between"><span>Walls:</span><span class="font-semibold">${data.stats.total_walls}</span></div><div class="flex justify-between"><span>Load-bearing:</span><span class="font-semibold text-amber-600">${data.stats.load_bearing}</span></div><div class="flex justify-between"><span>Rooms:</span><span class="font-semibold">${data.stats.total_rooms}</span></div><div class="flex justify-between"><span>Area:</span><span class="font-semibold">${data.stats.total_area?.toFixed(1)} m²</span></div></div>`;
-                }
-
-                // 2D plan: simple wall visualization (draw lines)
-                if (data.walls && data.walls.length) {
-                    wallCanvas.style.display = 'block';
-                    const ctx = wallCanvas.getContext('2d');
-                    const w = 500, h = 400;
-                    wallCanvas.width = w; wallCanvas.height = h;
-                    ctx.clearRect(0, 0, w, h);
-                    ctx.strokeStyle = '#3b82f6';
-                    ctx.lineWidth = 2;
-                    // find bounding box for scaling
-                    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                    data.walls.forEach(wall => {
-                        minX = Math.min(minX, wall.start[0], wall.end[0]);
-                        maxX = Math.max(maxX, wall.start[0], wall.end[0]);
-                        minY = Math.min(minY, wall.start[1], wall.end[1]);
-                        maxY = Math.max(maxY, wall.start[1], wall.end[1]);
-                    });
-                    const pad = 30;
-                    const scaleX = (w - pad * 2) / (maxX - minX || 1);
-                    const scaleY = (h - pad * 2) / (maxY - minY || 1);
-                    data.walls.forEach(wall => {
-                        const sx = pad + (wall.start[0] - minX) * scaleX;
-                        const sy = h - pad - (wall.start[1] - minY) * scaleY;
-                        const ex = pad + (wall.end[0] - minX) * scaleX;
-                        const ey = h - pad - (wall.end[1] - minY) * scaleY;
-                        ctx.beginPath();
-                        ctx.moveTo(sx, sy);
-                        ctx.lineTo(ex, ey);
-                        ctx.stroke();
-                        if (wall.is_load_bearing) {
-                            ctx.save();
-                            ctx.strokeStyle = '#f59e0b';
-                            ctx.lineWidth = 3.5;
-                            ctx.beginPath();
-                            ctx.moveTo(sx, sy);
-                            ctx.lineTo(ex, ey);
-                            ctx.stroke();
-                            ctx.restore();
-                        }
-                    });
-                    detectionStatusP.innerText = `✅ Detected ${data.walls.length} walls (orange = load-bearing)`;
-                } else {
-                    detectionStatusP.innerText = `⚠️ No walls detected. Try manual mode or upload clearer image.`;
-                }
-
-                // 3D model iframe
-                if (data.model_url) {
-                    currentModelUrl = data.model_url;
-                    iframeWrapper.innerHTML = `<iframe src="${data.model_url}" class="w-full h-full rounded-lg border-0" style="min-height: 380px; width:100%;" allowfullscreen></iframe>`;
-                }
-
-                // Material recommendations rendering
-                if (data.recommendations) {
-                    let cardsHtml = '';
-                    const elements = ['load_bearing_wall', 'partition_wall', 'slab', 'column'];
-                    const titles = { load_bearing_wall: '🧱 Load-Bearing', partition_wall: '🚪 Partition', slab: '🏗️ Slab', column: '📐 Column' };
-                    for (let el of elements) {
-                        const recs = data.recommendations[el];
-                        if (recs && recs.length) {
-                            const top = recs[0];
-                            cardsHtml += `
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm card-hover">
-                  <div class="flex justify-between items-start mb-2"><h3 class="font-semibold text-slate-800">${titles[el] || el}</h3><span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Score ${top.score}</span></div>
-                  <p class="text-lg font-bold text-slate-900">${top.material}</p>
-                  <div class="flex justify-between text-sm mt-2"><span><i class="fas fa-dollar-sign text-slate-400"></i> ${top.cost}/m²</span><span><i class="fas fa-weight-hanging"></i> ${top.strength} MPa</span><span><i class="fas fa-shield-alt"></i> Dur:${top.durability}/10</span></div>
-                  <p class="text-xs text-slate-500 mt-3 border-t pt-2">${top.justification?.substring(0, 100) || 'Optimized cost-strength tradeoff.'}</p>
-                </div>`;
-                        } else {
-                            cardsHtml += `<div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-center text-slate-400"><i class="fas fa-chart-simple"></i><p class="text-sm mt-1">No data for ${titles[el] || el}</p></div>`;
-                        }
-                    }
-                    materialGrid.innerHTML = cardsHtml;
-                }
-
-                // Auto-switch to 3D tab after processing for better UX
-                setActiveTab('3d');
-
-            } catch (err) {
-                console.error(err);
-                alert("Error: " + err.message);
-                detectionStatusP.innerText = "❌ AI processing failed. Try manual mode or different image.";
-            } finally {
-                loadingIndicator.classList.add('hidden');
-                processBtn.disabled = false;
-            }
-        }
-
-        processBtn.addEventListener('click', processFloorPlan);
-
-        // initial: set tab active 2D and reset canvas
-        setActiveTab('2d');
-        resetUI();
-    </script>
+    <script src="/static/script.js"></script>
 </body>
 
 </html>
